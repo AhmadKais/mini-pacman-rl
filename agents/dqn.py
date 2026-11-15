@@ -58,7 +58,8 @@ class ReplayBuffer:
 class DQNAgent:
     def __init__(self, obs_shape, n_actions=4, lr=2.5e-4, gamma=0.99, batch_size=64,
                  buffer_size=100000, warmup=2000, train_every=2, target_every=1000,
-                 eps_start=1.0, eps_end=0.05, eps_decay_episodes=1500, reward_scale=0.01):
+                 eps_start=1.0, eps_end=0.05, eps_decay_episodes=1500, reward_scale=0.01,
+                 double_dqn=True):
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
         else:
@@ -72,6 +73,7 @@ class DQNAgent:
         self.eps_end = eps_end
         self.eps_decay_episodes = eps_decay_episodes
         self.reward_scale = reward_scale  # rewards go up to 500, so scale them down
+        self.double_dqn = double_dqn
         self.steps = 0
         self.episodes = 0
 
@@ -120,10 +122,14 @@ class DQNAgent:
 
         q = self.net(obs).gather(1, actions.unsqueeze(1)).squeeze(1)
         with torch.no_grad():
-            # double DQN: the online net picks the next action, the target net scores it
-            next_q = self.net(next_obs).masked_fill(~masks, -1e9)
-            best_next = next_q.argmax(1, keepdim=True)
-            next_value = self.target(next_obs).gather(1, best_next).squeeze(1)
+            target_q = self.target(next_obs).masked_fill(~masks, -1e9)
+            if self.double_dqn:
+                # the online net picks the next action, the target net scores it
+                online_q = self.net(next_obs).masked_fill(~masks, -1e9)
+                best_next = online_q.argmax(1, keepdim=True)
+                next_value = target_q.gather(1, best_next).squeeze(1)
+            else:
+                next_value = target_q.max(1).values
             target = rewards + self.gamma * (1 - dones) * next_value
 
         loss = F.smooth_l1_loss(q, target)

@@ -39,6 +39,8 @@ LAYOUTS = {
 def read_layout(name):
     if name in LAYOUTS:
         text = LAYOUTS[name]
+    elif "\n" in name:
+        text = name  # the maze itself was passed in (used by the tests)
     else:
         # you can also give the path of a text file with your own maze
         with open(name) as f:

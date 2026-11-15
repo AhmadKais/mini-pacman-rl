@@ -10,13 +10,25 @@ from agents.features import extract_features
 
 
 class ApproxQAgent:
-    def __init__(self, alpha=0.1, gamma=0.9, epsilon=1.0, eps_min=0.05, eps_decay=0.995):
+    def __init__(self, alpha=0.1, gamma=0.9, epsilon=1.0, eps_min=0.05, eps_decay=0.995,
+                 drop_features=None):
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
         self.eps_min = eps_min
         self.eps_decay = eps_decay
         self.weights = {}
+        # features to leave out, for the ablation experiments
+        self.drop_features = []
+        if drop_features is not None:
+            self.drop_features = list(drop_features)
+
+    def get_features(self, env, action):
+        features = extract_features(env, action)
+        for name in self.drop_features:
+            if name in features:
+                del features[name]
+        return features
 
     def q_value(self, features):
         total = 0.0
@@ -28,7 +40,7 @@ class ApproxQAgent:
         best_q = None
         best = []
         for action in env.legal_actions():
-            q = self.q_value(extract_features(env, action))
+            q = self.q_value(self.get_features(env, action))
             if best_q is None or q > best_q:
                 best_q = q
                 best = [action]
