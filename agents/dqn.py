@@ -21,7 +21,8 @@ class QNetwork(nn.Module):
     def forward(self, x):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
-        x = F.relu(self.fc1(x.flatten(1)))
+        x = x.flatten(1)
+        x = F.relu(self.fc1(x))
         return self.fc2(x)
 
 
@@ -30,12 +31,12 @@ class ReplayBuffer:
         self.capacity = capacity
         self.pos = 0
         self.size = 0
-        self.obs = np.zeros((capacity, *obs_shape), dtype=np.float32)
-        self.next_obs = np.zeros((capacity, *obs_shape), dtype=np.float32)
+        self.obs = np.zeros((capacity,) + obs_shape, dtype=np.float32)
+        self.next_obs = np.zeros((capacity,) + obs_shape, dtype=np.float32)
         self.actions = np.zeros(capacity, dtype=np.int64)
         self.rewards = np.zeros(capacity, dtype=np.float32)
         self.dones = np.zeros(capacity, dtype=np.float32)
-        self.masks = np.zeros((capacity, 4), dtype=bool)  # legal moves in next state
+        self.masks = np.zeros((capacity, 4), dtype=bool)  # legal moves in the next state
 
     def add(self, obs, action, reward, next_obs, done, mask):
         i = self.pos
@@ -48,8 +49,8 @@ class ReplayBuffer:
         self.pos = (i + 1) % self.capacity
         self.size = min(self.size + 1, self.capacity)
 
-    def sample(self, n):
-        idx = np.random.randint(0, self.size, n)
+    def sample(self, batch_size):
+        idx = np.random.randint(0, self.size, batch_size)
         return (self.obs[idx], self.actions[idx], self.rewards[idx],
                 self.next_obs[idx], self.dones[idx], self.masks[idx])
 
@@ -58,30 +59,34 @@ class DQNAgent:
     def __init__(self, obs_shape, n_actions=4, lr=2.5e-4, gamma=0.99, batch_size=64,
                  buffer_size=100000, warmup=2000, train_every=2, target_every=1000,
                  eps_start=1.0, eps_end=0.05, eps_decay_episodes=1500, reward_scale=0.01):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.n_actions = n_actions
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        else:
+            self.device = torch.device("cpu")
         self.gamma = gamma
         self.batch_size = batch_size
         self.warmup = warmup
         self.train_every = train_every
         self.target_every = target_every
-        self.eps_start, self.eps_end = eps_start, eps_end
+        self.eps_start = eps_start
+        self.eps_end = eps_end
         self.eps_decay_episodes = eps_decay_episodes
+        self.reward_scale = reward_scale  # rewards go up to 500, so scale them down
+        self.steps = 0
         self.episodes = 0
-        self.reward_scale = reward_scale  # rewards go up to 500, scale them down
 
-        self.net = QNetwork(*obs_shape, n_actions).to(self.device)
-        self.target = QNetwork(*obs_shape, n_actions).to(self.device)
+        channels, height, width = obs_shape
+        self.net = QNetwork(channels, height, width, n_actions).to(self.device)
+        self.target = QNetwork(channels, height, width, n_actions).to(self.device)
         self.target.load_state_dict(self.net.state_dict())
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=lr)
         self.buffer = ReplayBuffer(buffer_size, obs_shape)
-        self.steps = 0
 
     @property
     def epsilon(self):
-        # linear decay per episode (early games are very short, so per step is too slow)
-        t = min(1.0, self.episodes / self.eps_decay_episodes)
-        return self.eps_start + t * (self.eps_end - self.eps_start)
+        # goes down linearly per episode (early games are very short, so per step is too slow)
+        progress = min(1.0, self.episodes / self.eps_decay_episodes)
+        return self.eps_start + progress * (self.eps_end - self.eps_start)
 
     def act(self, env, obs, greedy=False):
         legal = env.legal_actions()
@@ -90,7 +95,11 @@ class DQNAgent:
         with torch.no_grad():
             x = torch.tensor(obs, device=self.device).unsqueeze(0)
             q = self.net(x)[0].cpu().numpy()
-        return max(legal, key=lambda a: q[a])
+        best = legal[0]
+        for action in legal:
+            if q[action] > q[best]:
+                best = action
+        return best
 
     def remember(self, obs, action, reward, next_obs, terminal, next_mask):
         self.buffer.add(obs, action, reward * self.reward_scale, next_obs, terminal, next_mask)
@@ -101,17 +110,21 @@ class DQNAgent:
             self.target.load_state_dict(self.net.state_dict())
 
     def train_step(self):
-        batch = self.buffer.sample(self.batch_size)
-        obs, actions, rewards, next_obs, dones, masks = [
-            torch.tensor(b, device=self.device) for b in batch]
+        obs, actions, rewards, next_obs, dones, masks = self.buffer.sample(self.batch_size)
+        obs = torch.tensor(obs, device=self.device)
+        actions = torch.tensor(actions, device=self.device)
+        rewards = torch.tensor(rewards, device=self.device)
+        next_obs = torch.tensor(next_obs, device=self.device)
+        dones = torch.tensor(dones, device=self.device)
+        masks = torch.tensor(masks, device=self.device)
 
         q = self.net(obs).gather(1, actions.unsqueeze(1)).squeeze(1)
         with torch.no_grad():
-            # double DQN: online net picks the action, target net scores it
+            # double DQN: the online net picks the next action, the target net scores it
             next_q = self.net(next_obs).masked_fill(~masks, -1e9)
-            best = next_q.argmax(1, keepdim=True)
-            next_val = self.target(next_obs).gather(1, best).squeeze(1)
-            target = rewards + self.gamma * (1 - dones) * next_val
+            best_next = next_q.argmax(1, keepdim=True)
+            next_value = self.target(next_obs).gather(1, best_next).squeeze(1)
+            target = rewards + self.gamma * (1 - dones) * next_value
 
         loss = F.smooth_l1_loss(q, target)
         self.optimizer.zero_grad()

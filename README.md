@@ -22,21 +22,28 @@ A small Pac-Man game where an agent learns to win on its own, using two methods:
 | win            | +500   |
 | caught         | -500   |
 
-## Files
+## Project structure
 
-| file | what it does |
-|------|--------------|
-| `layouts.py` | maze maps and the parser |
-| `pacman_env.py` | game logic (reset / step, like a gym env) |
-| `features.py` | features for approximate Q-learning |
-| `approx_q_agent.py` | approximate Q-learning agent |
-| `dqn_agent.py` | DQN agent (replay buffer, target net, double DQN) |
-| `train.py` | training loop, saves the model and a csv log |
-| `play.py` | watch a trained agent play (pygame or terminal) |
-| `render.py` | drawing code |
-| `live.py` | live chart + game window while training (`--live`) |
-| `plot_results.py` | learning curves |
-| `ghost_test.py` | checks whether the agents really avoid ghosts |
+```
+pacman/              the game
+  layouts.py         maze maps, parser and maze distances (BFS)
+  env.py             game rules (reset / step, like a gym env)
+  ghosts.py          how the ghosts move
+  render.py          terminal and pygame drawing
+  live_view.py       live chart + game window while training
+agents/              the learning code
+  features.py        features for approximate Q-learning
+  approx_q.py        approximate Q-learning agent
+  dqn.py             DQN agent (CNN, replay buffer, target net, double DQN)
+  baselines.py       random and food-only agents to compare against
+  loading.py         creating / loading agents
+train.py             train an agent, save the model and a csv log
+play.py              watch a trained agent play
+ghost_test.py        check whether the agents really avoid ghosts
+plot_results.py      learning curves from the csv logs
+models/              trained models
+results/             training logs and charts
+```
 
 ## How to run
 

@@ -6,62 +6,65 @@ import argparse
 import os
 import time
 
-from pacman_env import PacmanEnv
-from render import PygameView, text_frame
+from agents.loading import load_agent
+from pacman.env import PacmanEnv
+from pacman.render import PygameView, text_frame
 
 
-def load_agent(kind, env, path):
-    if kind == "approxq":
-        from approx_q_agent import ApproxQAgent
-        agent = ApproxQAgent()
+def show(env, view, action, fps):
+    if view is not None:
+        view.draw(env, action)
     else:
-        from dqn_agent import DQNAgent
-        agent = DQNAgent((env.n_channels, env.height, env.width))
-    agent.load(path)
-    return agent
+        if os.name == "nt":
+            os.system("cls")
+        else:
+            os.system("clear")
+        print(text_frame(env))
+        time.sleep(1 / fps)
 
 
 def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--agent", choices=["approxq", "dqn"], default="approxq")
-    p.add_argument("--layout", default="small")
-    p.add_argument("--model", default=None)
-    p.add_argument("--games", type=int, default=3)
-    p.add_argument("--ghost-chase", type=float, default=0.2)
-    p.add_argument("--fps", type=int, default=8)
-    p.add_argument("--text", action="store_true", help="print to terminal instead of pygame")
-    args = p.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--agent", choices=["approxq", "dqn"], default="approxq")
+    parser.add_argument("--layout", default="small")
+    parser.add_argument("--model", default=None, help="path of the saved model")
+    parser.add_argument("--games", type=int, default=3)
+    parser.add_argument("--ghost-chase", type=float, default=0.2)
+    parser.add_argument("--fps", type=int, default=8)
+    parser.add_argument("--text", action="store_true", help="show the game in the terminal")
+    args = parser.parse_args()
 
     env = PacmanEnv(args.layout, max_steps=300, ghost_chase_prob=args.ghost_chase)
-    ext = "json" if args.agent == "approxq" else "pt"
-    path = args.model or f"models/{args.agent}_{args.layout}.{ext}"
-    agent = load_agent(args.agent, env, path)
-    view = None if args.text else PygameView(env, fps=args.fps)
+    agent = load_agent(args.agent, env, args.model)
+
+    view = None
+    if not args.text:
+        view = PygameView(env, fps=args.fps)
 
     wins = 0
     for game in range(1, args.games + 1):
         obs = env.reset()
         action = None
-        while True:
-            if view:
-                view.draw(env, action)
-                if view.closed:
-                    return
-            else:
-                os.system("cls" if os.name == "nt" else "clear")
-                print(text_frame(env))
-                time.sleep(1 / args.fps)
-            if env.done:
-                break
+        show(env, view, action, args.fps)
+        while not env.done:
             action = agent.act(env, obs, greedy=True)
-            obs, _, _, _ = env.step(action)
-        wins += env.won
-        result = "won" if env.won else ("time up" if env.truncated else "lost")
+            obs, reward, done, info = env.step(action)
+            show(env, view, action, args.fps)
+            if view is not None and view.closed:
+                return
+
+        if env.won:
+            wins += 1
+            result = "won"
+        elif env.truncated:
+            result = "time up"
+        else:
+            result = "lost"
         print(f"game {game}: {result}, score {env.score}")
         time.sleep(1)
 
     print(f"won {wins}/{args.games} games")
-    if view:
+    if view is not None:
         view.close()
 
 

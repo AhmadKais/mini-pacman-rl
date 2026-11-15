@@ -1,40 +1,45 @@
-# Plot learning curves from the csv files that train.py writes.
+# Plot the learning curves from the csv files that train.py writes.
 #   python plot_results.py results/approxq_small.csv results/dqn_small.csv
 
 import csv
+import os
 import sys
 
 import matplotlib.pyplot as plt
 
+from pacman.live_view import moving_average
 
-def moving_avg(values, k=50):
-    out = []
-    for i in range(len(values)):
-        window = values[max(0, i - k + 1):i + 1]
-        out.append(sum(window) / len(window))
-    return out
+
+def read_log(path):
+    episodes = []
+    scores = []
+    wins = []
+    with open(path) as f:
+        for row in csv.DictReader(f):
+            episodes.append(int(row["episode"]))
+            scores.append(float(row["score"]))
+            wins.append(float(row["won"]) * 100)
+    return episodes, scores, wins
 
 
 def main():
     files = sys.argv[1:]
-    if not files:
-        print("usage: python plot_results.py results/<file>.csv [more files...]")
+    if len(files) == 0:
+        print("usage: python plot_results.py results/<file>.csv [more files]")
         return
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+    score_ax = axes[0]
+    win_ax = axes[1]
     for path in files:
-        with open(path) as f:
-            rows = list(csv.DictReader(f))
-        eps = [int(r["episode"]) for r in rows]
-        scores = [float(r["score"]) for r in rows]
-        wins = [float(r["won"]) * 100 for r in rows]
-        name = path.replace("\\", "/").split("/")[-1].replace(".csv", "")
-        ax1.plot(eps, moving_avg(scores), label=name)
-        ax2.plot(eps, moving_avg(wins), label=name)
+        episodes, scores, wins = read_log(path)
+        name = os.path.splitext(os.path.basename(path))[0]
+        score_ax.plot(episodes, moving_average(scores), label=name)
+        win_ax.plot(episodes, moving_average(wins), label=name)
 
-    ax1.set_title("Score (moving avg of 50 episodes)")
-    ax2.set_title("Win rate % (moving avg of 50 episodes)")
-    for ax in (ax1, ax2):
+    score_ax.set_title("Score (moving avg of 50 episodes)")
+    win_ax.set_title("Win rate % (moving avg of 50 episodes)")
+    for ax in [score_ax, win_ax]:
         ax.set_xlabel("episode")
         ax.grid(alpha=0.3)
         ax.legend()
