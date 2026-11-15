@@ -1,0 +1,3 @@
+__pycache__/
+*.pyc
+results/dqn_train_log.txt
