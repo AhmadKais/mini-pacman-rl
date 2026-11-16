@@ -29,6 +29,10 @@ def parse_args():
     parser.add_argument("--no-double", action="store_true", help="DQN without double DQN")
     parser.add_argument("--drop-features", nargs="*", default=None,
                         help="approximate Q-learning features to leave out")
+    parser.add_argument("--eps-episodes", type=int, default=None,
+                        help="episodes until epsilon is at its minimum (default 60%% of them)")
+    parser.add_argument("--ghost-directions", action="store_true",
+                        help="DQN also sees which way the ghosts are moving")
     parser.add_argument("--threads", type=int, default=None, help="cpu threads for torch")
     parser.add_argument("--live", action="store_true", help="show a live chart and games")
     parser.add_argument("--watch-every", type=int, default=None, help="show a game every N episodes")
@@ -75,9 +79,10 @@ def main():
         torch.set_num_threads(args.threads)
 
     env = PacmanEnv(args.layout, max_steps=args.max_steps,
-                    ghost_chase_prob=args.ghost_chase, seed=args.seed)
+                    ghost_chase_prob=args.ghost_chase, seed=args.seed,
+                    ghost_directions=args.ghost_directions)
     agent = new_agent(args.agent, env, episodes, double_dqn=not args.no_double,
-                      drop_features=args.drop_features)
+                      drop_features=args.drop_features, eps_episodes=args.eps_episodes)
 
     live = None
     if args.live:

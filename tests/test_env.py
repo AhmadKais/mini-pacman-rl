@@ -122,6 +122,14 @@ class TestEpisode(unittest.TestCase):
         self.assertEqual(obs[4].sum(), 1)  # one ghost, not scared
         self.assertEqual(obs[1].sum(), len(env.food))
 
+    def test_ghost_direction_channel(self):
+        env = PacmanEnv(GHOST_AHEAD, ghost_directions=True)
+        self.assertEqual(env.get_observation().shape[0], 7)
+        self.assertEqual(env.get_observation()[6].sum(), 0)  # no move yet
+        obs, reward, done, info = env.step(RIGHT)  # ghost goes from (1, 4) to (1, 3)
+        self.assertEqual(obs[6][1, 4], 1)
+        self.assertEqual(obs[6].sum(), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

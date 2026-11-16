@@ -8,6 +8,7 @@ import numpy as np
 
 from pacman.ghosts import move_ghosts
 from pacman.layouts import read_layout, maze_distances
+from pacman.observation import make_observation
 
 MOVES = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # up, down, left, right
 ACTION_NAMES = ["Up", "Down", "Left", "Right"]
@@ -22,10 +23,9 @@ LOSE_PENALTY = -500
 
 class PacmanEnv:
     n_actions = 4
-    n_channels = 6  # walls, food, capsules, pacman, ghosts, scared ghosts
 
     def __init__(self, layout="small", max_steps=500, ghost_chase_prob=0.2,
-                 scared_time=20, seed=None):
+                 scared_time=20, seed=None, ghost_directions=False):
         walls, food, capsules, pacman, ghosts = read_layout(layout)
         self.layout_name = layout
         self.walls = walls
@@ -40,6 +40,7 @@ class PacmanEnv:
         self.scared_time = scared_time
         self.rng = random.Random(seed)
         self.dist = maze_distances(walls)
+        self.use_ghost_directions(ghost_directions)
         self.reset()
 
     def distance(self, a, b):
@@ -132,17 +133,13 @@ class PacmanEnv:
                 return reward + LOSE_PENALTY
         return reward
 
+    def use_ghost_directions(self, on):
+        # adds a 7th observation channel with the cell each ghost just came from
+        self.ghost_directions = on
+        if on:
+            self.n_channels = 7
+        else:
+            self.n_channels = 6
+
     def get_observation(self):
-        obs = np.zeros((6, self.height, self.width), dtype=np.float32)
-        obs[0] = self.walls
-        for cell in self.food:
-            obs[1][cell] = 1
-        for cell in self.capsules:
-            obs[2][cell] = 1
-        obs[3][self.pacman] = 1
-        for i in range(len(self.ghosts)):
-            if self.scared[i] > 0:
-                obs[5][self.ghosts[i]] = self.scared[i] / self.scared_time
-            else:
-                obs[4][self.ghosts[i]] = 1
-        return obs
+        return make_observation(self)
