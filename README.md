@@ -11,7 +11,8 @@ A small Pac-Man game where an agent learns to win on its own, using two methods:
 - A ghost touching Pac-Man means game over
 - Eating a capsule (`o`) scares the ghosts for 20 steps, and Pac-Man can eat them
 - Ghosts mostly move randomly but sometimes chase (`--ghost-chase`, default 0.2)
-- Mazes: `tiny`, `small`, `medium` (see `layouts.py`)
+- Mazes: `tiny`, `small` (1 ghost), `medium` (2 ghosts), see `pacman/layouts.py`
+- A game ends after 300 steps at most
 
 | event          | reward |
 |----------------|--------|
@@ -36,11 +37,15 @@ agents/              the learning code
   approx_q.py        approximate Q-learning agent
   dqn.py             DQN agent (CNN, replay buffer, target net, double DQN)
   baselines.py       random and food-only agents to compare against
+  training.py        one training episode, and the test without random moves
   loading.py         creating / loading agents
-train.py             train an agent, save the model and a csv log
+tests/               unit tests for the game rules, features and agents
+train.py             train one agent, save the model and a csv log
 play.py              watch a trained agent play
 ghost_test.py        check whether the agents really avoid ghosts
-plot_results.py      learning curves from the csv logs
+run_experiments.py   run every experiment with 3 seeds
+summarize.py         results table and charts for the experiments
+plot_results.py      learning curves for single runs
 models/              trained models
 results/             training logs and charts
 ```
@@ -52,17 +57,21 @@ pip install -r requirements.txt
 
 python train.py --agent approxq --episodes 500
 python train.py --agent dqn --episodes 3000
+python train.py --agent dqn --live          # watch it learn
 
 python play.py --agent approxq
 python play.py --agent dqn --text
 
-python plot_results.py results/approxq_small.csv results/dqn_small.csv
 python ghost_test.py --games 200
+python -m unittest -v
 ```
 
-Add `--live` to `train.py` to watch the learning curve and a game every few episodes.
+To repeat all the experiments below (this takes several hours, mostly the DQN runs):
 
-Try a bigger maze with `--layout medium` (it needs more episodes for DQN).
+```
+python run_experiments.py
+python summarize.py
+```
 
 ## How the algorithms work
 
@@ -90,15 +99,54 @@ Some tricks keep training stable:
 DQN needs far more games than approximate Q-learning, but it doesn't need any
 hand made features.
 
-## Results (small maze)
+## Results
 
-![learning curves](results/learning_curves.png)
+Every experiment was trained 3 times with different seeds (0, 1, 2). The numbers are
+mean ± standard deviation over the 3 runs. "Test" means 100 games without random
+moves after training. "Episodes to 80% wins" is when the win rate over the last 50
+training games first reaches 80%.
 
-| | Approximate Q-learning | DQN |
-|---|---|---|
-| episodes to learn | ~300 (about 1 min) | ~2000 (about 30 min) |
-| test win rate (100 games) | 98% | 100% |
-| average score | 919 | 1061 |
+| experiment | test win rate | test avg score | episodes to 80% wins |
+|---|---|---|---|
+| approxq, small maze | 96% ± 1 | 883 ± 13 | 228 ± 27 |
+| dqn, small maze | **100% ± 1** | **1073 ± 12** | 2138 ± 161 |
+| approxq, medium maze | 63% ± 3 | 794 ± 56 | never |
+| dqn, medium maze | *still training* | | |
+
+![small maze](results/small_maze.png)
+
+- Both methods solve the small maze with every seed, so the result is not luck.
+- Approximate Q-learning learns about **10 times faster** (around 230 episodes, under
+  a minute) but DQN ends up a bit better, mostly because it eats more scared ghosts.
+- On the medium maze (2 ghosts, about 4 times the food) approximate Q-learning only
+  wins 63%. Probably because its features only look at the closest ghost and the
+  closest food, which is not enough to plan around two ghosts in a bigger maze.
+
+### Ablations
+
+What happens when parts of the method are taken away (small maze, 3 seeds each):
+
+| experiment | test win rate | test avg score | episodes to 80% wins |
+|---|---|---|---|
+| approxq (all features) | 96% ± 1 | 883 ± 13 | 228 ± 27 |
+| approxq without ghost features | **43% ± 1** | **215 ± 39** | never |
+| approxq without scared-ghost features | 97% ± 3 | 876 ± 16 | 213 ± 27 |
+| dqn (double DQN) | 100% ± 1 | 1073 ± 12 | 2138 ± 161 |
+| dqn without double DQN | 98% ± 2 | 1083 ± 12 | 2423 ± 380 |
+
+![feature ablation](results/ablation_features.png)
+![double dqn ablation](results/ablation_double_dqn.png)
+
+- **The ghost features are what makes approximate Q-learning work.** Without
+  `ghosts-1-step-away` and `ghost-closeness` the agent can't see danger, and the win
+  rate stays around 30% during training (43% in the test).
+- The scared-ghost features (`eats-scared-ghost`, `scared-ghost-closeness`) don't change
+  the result. On this small maze the scared ghost is usually close anyway, so hunting
+  it on purpose doesn't add much.
+- **Double DQN helps a little.** It reaches 80% wins about 300 episodes earlier and
+  its training win rate stays around 80% instead of 65-75%, but the final test results
+  are almost the same. With only 3 seeds and overlapping error bars, this difference
+  is small and not conclusive.
 
 ### Do they really avoid the ghosts?
 
@@ -124,7 +172,6 @@ more aggressive ghosts as well.
 | 80% | approxq | 100% | 0% | 1.0 | 99% | 1.79 |
 | 80% | dqn | **100%** | **0%** | 7.0 | **100%** | **2.71** |
 
-What this shows:
 - Just running for the food isn't enough: food-only gets caught in a quarter to a
   third of its games, and escapes fewer close calls as the ghosts get more aggressive.
 - Both trained agents escape almost every close call, even against ghosts that chase
@@ -132,5 +179,14 @@ What this shows:
 - They play differently. Approximate Q-learning stays away from ghosts (about 1 close
   call per game). DQN lets ghosts get close 5 to 7 times a game and always gets away,
   and it eats more scared ghosts, which is where its higher score comes from.
-- On the medium maze (2 ghosts) approximate Q-learning wins 56% after 500 episodes,
-  so the bigger maze is much harder.
+
+## Tests
+
+`tests/` has 18 unit tests. The game rules are tested on tiny corridor mazes where the
+outcome is known: walls, eating food, winning, getting caught, capsules, eating a scared
+ghost, the time limit and reset. The agent tests check the features, the Q-learning
+update, saving / loading and the food-only baseline.
+
+```
+python -m unittest -v
+```
