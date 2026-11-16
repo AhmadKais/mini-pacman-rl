@@ -16,7 +16,7 @@ FOLDER = "results/experiments"
 
 CHARTS = {
     "small_maze.png": ["approxq_small", "dqn_small"],
-    "medium_maze.png": ["approxq_medium", "dqn_medium"],
+    "medium_maze.png": ["approxq_medium", "dqn_medium", "dqn_medium_10k"],
     "ablation_double_dqn.png": ["dqn_small", "dqn_small_no_double"],
     "ablation_features.png": ["approxq_small", "approxq_small_no_ghost_features",
                               "approxq_small_no_scared_features"],

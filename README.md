@@ -111,7 +111,8 @@ training games first reaches 80%.
 | approxq, small maze | 96% ± 1 | 883 ± 13 | 228 ± 27 |
 | dqn, small maze | **100% ± 1** | **1073 ± 12** | 2138 ± 161 |
 | approxq, medium maze | 63% ± 3 | 794 ± 56 | never |
-| dqn, medium maze | **73% ± 5** | **1043 ± 36** | never (training reached ~40%) |
+| dqn, medium maze, 5000 episodes | 73% ± 5 | 1043 ± 36 | never (training reached ~40%) |
+| dqn, medium maze, 10000 episodes | **79% ± 4** | **1170 ± 86** | never (training reached ~50%) |
 
 ![small maze](results/small_maze.png)
 ![medium maze](results/medium_maze.png)
@@ -122,11 +123,15 @@ training games first reaches 80%.
 - On the medium maze (2 ghosts, about 4 times the food) approximate Q-learning only
   wins 63%. Probably because its features only look at the closest ghost and the
   closest food, which is not enough to plan around two ghosts in a bigger maze.
-- DQN does better on the medium maze (73% wins, 1043 score) but needs a lot more time:
-  it wins almost nothing for the first 2,700 episodes, and each run took about 8 hours.
-  Its training curve was still going up at episode 5000, so more episodes would
-  probably help. The test win rate is higher than the training curve because the
-  test has no random moves.
+- DQN does better on the medium maze but needs a lot more time. With 5000 episodes
+  it wins 73%, and it wins almost nothing until the random moves drop low (around
+  episode 2,700). Each run took about 8 hours.
+- Its curve was still going up at episode 5000, so I trained it again with 10000
+  episodes (about 11.5 hours per run). That got it to **79% wins** and a higher score.
+  The training curve flattens out around 45-50% after episode 8,500, so doubling
+  the episodes again would probably give only a small gain.
+- The test win rate is higher than the training curve because the test has no
+  random moves.
 
 ### Ablations
 

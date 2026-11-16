@@ -15,7 +15,8 @@ SEEDS = [0, 1, 2]
 
 # the slowest ones come first so the workers stay busy until the end
 EXPERIMENTS = {
-    "dqn_medium": ["--agent", "dqn", "--layout", "medium", "--episodes", "5000"],
+    "dqn_medium_10k": ["--agent", "dqn", "--layout", "medium", "--episodes", "10000"],
+    "dqn_medium":["--agent", "dqn", "--layout", "medium", "--episodes", "5000"],
     "dqn_small": ["--agent", "dqn", "--layout", "small", "--episodes", "3000"],
     "dqn_small_no_double": ["--agent", "dqn", "--layout", "small", "--episodes", "3000",
                             "--no-double"],
