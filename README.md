@@ -275,26 +275,34 @@ more aggressive ghosts as well.
 
 | ghosts chase | agent | win | caught | close calls / game | escaped | ghosts eaten / game |
 |---|---|---|---|---|---|---|
-| 20% | random | 0% | 100% | 1.5 | 41% | 0.21 |
-| 20% | food-only | 61% | 39% | 0.7 | 44% | 1.50 |
-| 20% | approxq | 98% | 2% | 0.8 | 99% | 2.15 |
-| 20% | dqn | **100%** | **0%** | 4.8 | **100%** | **2.84** |
-| 50% | random | 0% | 100% | 1.4 | 35% | 0.14 |
-| 50% | food-only | 64% | 36% | 0.5 | 35% | 1.35 |
-| 50% | approxq | 97% | 3% | 1.0 | 97% | 2.00 |
-| 50% | dqn | **100%** | **0%** | 6.3 | **100%** | **2.77** |
-| 80% | random | 0% | 100% | 1.2 | 19% | 0.06 |
-| 80% | food-only | 76% | 24% | 0.3 | 18% | 1.20 |
-| 80% | approxq | 100% | 0% | 1.0 | 99% | 1.79 |
-| 80% | dqn | **100%** | **0%** | 7.0 | **100%** | **2.71** |
+| 20% | random | 0% | 100% | 1.5 | 38% | 0.18 |
+| 20% | food-only | 61% | 39% | 0.7 | 48% | 0.95 |
+| 20% | approxq | 99% | 1% | 0.8 | 99% | 1.15 |
+| 20% | dqn | **100%** | **0%** | 4.7 | **100%** | **1.81** |
+| 50% | random | 0% | 100% | 1.4 | 34% | 0.14 |
+| 50% | food-only | 64% | 36% | 0.6 | 40% | 0.74 |
+| 50% | approxq | 98% | 2% | 0.8 | 98% | 1.01 |
+| 50% | dqn | **100%** | **0%** | 6.0 | **100%** | **1.88** |
+| 80% | random | 0% | 100% | 1.2 | 21% | 0.07 |
+| 80% | food-only | 64% | 36% | 0.5 | 20% | 0.59 |
+| 80% | approxq | 100% | 0% | 1.1 | 100% | 0.86 |
+| 80% | dqn | **100%** | **0%** | 6.9 | **100%** | **1.73** |
 
-- Just running for the food isn't enough: food-only gets caught in a quarter to a
-  third of its games, and escapes fewer close calls as the ghosts get more aggressive.
+(`python ghost_test.py --games 200`, seed 0: every agent gets the same random
+numbers, so running it again gives exactly this table.)
+
+- Just running for the food isn't enough: food-only gets caught in about a third of
+  its games, and escapes fewer close calls as the ghosts get more aggressive.
 - Both trained agents escape almost every close call, even against ghosts that chase
   80% of the time, which they never trained against.
 - They play differently. Approximate Q-learning stays away from ghosts (about 1 close
   call per game). DQN lets ghosts get close 5 to 7 times a game and always gets away,
-  and it eats more scared ghosts, which is where its higher score comes from.
+  and it eats more scared ghosts (1.7-1.9 per game against 0.9-1.2), which is where
+  its higher score comes from.
+- An earlier version of `ghost_test.py` counted the winning step as an eaten ghost
+  (both give a reward of 200 or more), which made every "ghosts eaten" number too high
+  by about the win rate. The game now counts eaten ghosts itself; the table above is
+  from the fixed version.
 
 ## Tests
 

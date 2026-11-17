@@ -110,7 +110,7 @@ def main():
         if args.eval_every > 0 and episode % args.eval_every == 0:
             best = keep_if_best(env, agent, model_file, best)
 
-    if args.eval_every > 0:
+    if best is not None:
         agent.load(model_file)  # go back to the best model for the final test
     else:
         agent.save(model_file)

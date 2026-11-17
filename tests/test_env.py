@@ -95,6 +95,7 @@ class TestGhosts(unittest.TestCase):
         self.assertFalse(done)
         self.assertEqual(env.ghosts[0], env.ghost_starts[0])  # sent back home
         self.assertEqual(env.scared[0], 0)
+        self.assertEqual(env.ghosts_eaten, 1)
 
 
 class TestEpisode(unittest.TestCase):

@@ -7,10 +7,11 @@
 
 import argparse
 import os
+import random
 
 from agents.baselines import FoodOnlyAgent, RandomAgent
 from agents.loading import load_agent, model_path
-from pacman.env import GHOST_REWARD, PacmanEnv
+from pacman.env import PacmanEnv
 
 
 def ghost_is_near(env):
@@ -32,9 +33,8 @@ def test_agent(env, agent, games):
                     close_calls.append(env.steps)
             action = agent.act(env, obs, greedy=True)
             obs, reward, done, info = env.step(action)
-            if reward >= GHOST_REWARD - 1:
-                stats["ghosts eaten"] += 1
 
+        stats["ghosts eaten"] += env.ghosts_eaten
         caught = not env.won and not env.truncated
         for start in close_calls:
             stats["close calls"] += 1
@@ -61,6 +61,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--layout", default="small")
     parser.add_argument("--games", type=int, default=200)
+    parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
     for chase in [0.2, 0.5, 0.8]:
@@ -77,6 +78,9 @@ def main():
         print(f"{'agent':10s} {'win':>6s} {'caught':>7s} {'timeout':>8s} "
               f"{'close/game':>11s} {'escaped':>8s} {'eaten/game':>11s}")
         for name in agents:
+            # every agent gets the same random numbers, so the results can be repeated
+            random.seed(args.seed)
+            env.rng = random.Random(args.seed)
             stats = test_agent(env, agents[name], args.games)
             print_row(name, stats, args.games)
 

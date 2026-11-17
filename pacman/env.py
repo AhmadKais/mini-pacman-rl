@@ -79,6 +79,7 @@ class PacmanEnv:
         self.capsules = set(self.start_capsules)
         self.steps = 0
         self.score = 0
+        self.ghosts_eaten = 0
         self.done = False
         self.won = False
         self.truncated = False
@@ -125,6 +126,7 @@ class PacmanEnv:
             if self.scared[i] > 0:
                 # pacman eats the ghost and it goes back to its start
                 reward += GHOST_REWARD
+                self.ghosts_eaten += 1
                 self.ghosts[i] = self.ghost_starts[i]
                 self.ghost_dirs[i] = None
                 self.scared[i] = 0

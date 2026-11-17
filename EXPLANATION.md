@@ -558,7 +558,8 @@ A gym-style environment: `reset()` and `step(action)`.
 - `reset()`: everything back to the start, returns the first observation.
 - `step(action)`: one turn in the order of section 3.4. Returns
   `(observation, reward, done, info)`; info has `won`, `truncated`, `score`.
-- `check_ghosts()`: collisions: eat a scared ghost (+200, back home) or die (−500).
+- `check_ghosts()`: collisions: eat a scared ghost (+200, back home, `ghosts_eaten`
+  +1) or die (−500).
 - `use_ghost_directions(on)`: switches the 7th channel on/off.
 - `get_observation()`: calls `make_observation`.
 
@@ -737,12 +738,22 @@ medium maze is much harder; DQN beats approximate Q-learning by about 20 points.
 
 A **close call** = an active ghost comes within 2 steps; **escaped** = still alive 3
 steps later. With ghosts chasing 20 / 50 / 80% of the time:
-- food-only gets caught in 24-39% of games and escapes only 18-44% of close calls
-- approximate Q-learning wins 97-100% and escapes 97-99%
+- food-only gets caught in 36-39% of games and escapes only 20-48% of close calls
+- approximate Q-learning wins 98-100% and escapes 98-100%
 - DQN wins 100% and escapes 100%, even against 80% chasers, which it never trained
   against
 - different styles: approximate Q-learning keeps away (≈1 close call per game), DQN
-  lets ghosts come close (5-7 per game) and always gets away, and eats more of them.
+  lets ghosts come close (5-7 per game) and always gets away, and eats more scared
+  ghosts (1.7-1.9 per game against 0.9-1.2).
+- The test uses seed 0 and gives every agent the same random numbers, so it can be
+  repeated exactly.
+
+A bug we found in the final code review: `ghost_test.py` used to count "a ghost was
+eaten" whenever a step's reward was 199 or more, but the winning step gives 509, so
+every won game counted one extra ghost. Now the game itself counts eaten ghosts
+(`env.ghosts_eaten`) and the numbers above are from the fixed version. Good to
+mention if asked about testing: reward-based detection was ambiguous, counting the
+event where it happens is exact.
 
 ### 9.4 The medium maze story: how we tried to improve DQN
 
