@@ -38,7 +38,7 @@ pacman/              the game
   observation.py     the grids the DQN sees
   render.py          pygame drawing (up/down arrows = speed, space = pause)
   text_view.py       the game as text for the terminal
-  live_view.py       live chart + game window while training
+  live_view.py       one window while training: the game + live learning curves
 agents/              the learning code
   features.py        features for approximate Q-learning
   approx_q.py        approximate Q-learning agent
@@ -78,7 +78,7 @@ python train.py --agent dqn --live          # watch it learn
 python train.py --agent approxq --layout medium --live --fps 5   # slower games
 
 # in the game window: up arrow = faster, down arrow = slower, space = pause
-# closing a window only stops the drawing, training goes on (ctrl+c stops it)
+# closing the window only stops the drawing, training goes on (ctrl+c stops it)
 
 python play.py --agent approxq
 python play.py --agent dqn --text

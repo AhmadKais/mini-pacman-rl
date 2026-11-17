@@ -592,9 +592,14 @@ A gym-style environment: `reset()` and `step(action)`.
 ### pacman/live_view.py
 - `moving_average(values, window=50)`: average of the last 50 values, used for every
   curve in the project.
-- `LiveTraining`: used by `train.py --live`. A matplotlib chart (score and win rate)
-  that redraws every 10 episodes, and every N episodes the agent plays one game in the
-  pygame window **without random moves** so you can watch it improve.
+- `LiveTraining`: used by `train.py --live`. One pygame window: the game on the left,
+  the score and win rate curves on the right (redrawn every 10 episodes). Every N
+  episodes the agent plays one game there **without random moves** so you can watch
+  it improve. The chart is drawn by matplotlib into an image (`show_chart`) and pygame
+  shows it. We first had a separate matplotlib window, but a matplotlib (Tk) window
+  and a pygame window in the same program crashed Python on Windows ("Fatal Python
+  error: PyEval_RestoreThread"), because both handle window events on the same thread.
+  `close` keeps the final chart on screen until the window is closed.
 
 ### agents/features.py
 - `ghost_reach(env, ghost)`: the cells a ghost can be on after one move.
@@ -1048,7 +1053,7 @@ The `--live` demo is the best one for a lecture: the win rate chart climbs to ar
 every 15 episodes a game is shown so the audience can see
 Pac-Man go from wandering into ghosts to clearly avoiding them. In the game window the
 down arrow slows it down, the up arrow speeds it up and space pauses (handy when
-explaining a move). Closing a window doesn't stop training, ctrl+c does.
+explaining a move). Closing the window doesn't stop training, ctrl+c does.
 
 If the laptop can't run Python, show the gifs in `results/` (`dqn_medium.gif`,
 `dqn_small.gif`, `approxq_small.gif`, `approxq_medium.gif`).

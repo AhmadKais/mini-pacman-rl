@@ -15,10 +15,13 @@ MOUTH_ANGLES = [-90, 90, 180, 0]  # up, down, left, right
 
 
 class PygameView:
-    def __init__(self, env, fps=8):
+    def __init__(self, env, fps=8, panel_width=0, min_height=0):
+        # panel_width: extra space on the right (the live training chart goes there)
         pygame.init()
         self.fps = fps
-        self.screen = pygame.display.set_mode((env.width * CELL, env.height * CELL + 30))
+        self.game_width = env.width * CELL
+        height = max(env.height * CELL + 30, min_height)
+        self.screen = pygame.display.set_mode((self.game_width + panel_width, height))
         pygame.display.set_caption("Mini Pac-Man RL")
         self.font = pygame.font.SysFont("consolas", 18)
         self.clock = pygame.time.Clock()
@@ -61,7 +64,7 @@ class PygameView:
     def draw(self, env, action=None):
         if not self.handle_events():
             return
-        self.screen.fill((0, 0, 0))
+        self.screen.fill((0, 0, 0), (0, 0, self.game_width, self.screen.get_height()))
         for r in range(env.height):
             for c in range(env.width):
                 if env.walls[r, c]:
