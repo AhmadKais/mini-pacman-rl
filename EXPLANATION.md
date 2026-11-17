@@ -146,6 +146,7 @@ Q-learning divides its features by 10 (smaller steps).
   - `tiny`: 7×5, 1 ghost, for quick tests
   - `small`: 9×7, 1 ghost, 23 food, 2 capsules
   - `medium`: 13×9, 2 ghosts, 50 food, 2 capsules
+  - `unseen`: 11×9, 2 ghosts, never used for training, only to test generalization
 
 ### 3.2 Rewards
 
@@ -310,8 +311,8 @@ careful. You can show this table to explain "the model is interpretable".
 ### 4.6 Strengths and weaknesses
 
 - \+ very fast (≈230 games ≈ under a minute on the small maze), interpretable, stable
-- \+ the features don't depend on the maze size, so the same weights could be tried
-  on another maze (DQN can't, see 11)
+- \+ the features don't depend on the maze, so the same weights work on other mazes
+  with no loss (tested, see 9.6). DQN can't do this.
 - − only as good as the features. On the medium maze it stops at 63%: the features
   only look at the closest ghost and the closest food, one step ahead, so it can't
   plan around two ghosts. It doesn't "know" about getting trapped in a corridor.
@@ -661,6 +662,10 @@ A gym-style environment: `reset()` and `step(action)`.
 - `play.py`: watch a trained model play (pygame window, or `--text` for the terminal).
 - `ghost_test.py`: the ghost avoidance test (section 9.3).
 - `planner_test.py`: plays games with the planner and saves the result.
+- `generalization_test.py`: approximate Q-learning weights on every maze (9.6).
+- `make_gif.py`: records a trained agent playing a won game as an animated gif
+  (pygame draws into memory instead of a window, Pillow saves the frames). The gifs
+  are in `results/`, a backup if the live demo doesn't work.
 - `run_experiments.py`: every experiment × seeds 0, 1, 2, several at once (each one a
   separate process with 1 CPU thread). Skips runs that already finished, so it can be
   restarted.
@@ -790,6 +795,29 @@ a ghost that's close, but doesn't plan far enough to avoid being trapped between
 ghosts. The natural next step would be **n-step returns** (learn from rewards several
 steps ahead directly) or a **dueling network**.
 
+### 9.6 Generalization: a maze it never saw (`generalization_test.py`)
+
+We took the approximate Q-learning weights trained on the small maze and on the
+medium maze and played 500 games on every maze, including `unseen` (never trained on).
+
+| weights trained on | tiny | small | medium | unseen |
+|---|---|---|---|---|
+| small | 100% | 96% | 63% | 74% |
+| medium | 100% | 97% | 59% | 70% |
+| trained on that maze itself | | 96% | 63% | 71% ± 4 |
+
+- The weights transfer **with no loss**: small-maze weights win 63% on the medium
+  maze, the same as weights trained there, and 74% on the unseen maze, the same as
+  training on it directly (3 seeds: 70%, 75%, 67%).
+- Why: the features describe Pac-Man's surroundings ("ghost one step away",
+  "distance to food"), not the maze, so the learned rule works anywhere. The limit on
+  bigger mazes comes from the features (one step ahead), not from the training maze.
+- DQN can't be tested this way: its network's input and fully connected layer are
+  sized for one maze, and it learned that specific maze.
+
+This is a nice point for the presentation: hand-made features need human work, but
+they generalize; DQN learns its own features, but only for what it saw.
+
 ---
 
 ## 10. Questions you may be asked (with answers)
@@ -898,9 +926,12 @@ To never choose a move into a wall, and to never let the target use the value of
 impossible move.
 
 **Q: Could the agent work on a new maze?**
-DQN: no, the network's input size and the fully connected layer depend on the maze
-size, and it learned this specific maze. Approximate Q-learning: the features don't
-depend on the maze, so the weights could be used on another maze (we didn't test it).
+Approximate Q-learning: yes, we tested it (9.6). Weights from the small maze win 74%
+on a maze it never saw, the same as training on that maze directly. DQN: no, the
+network's input size and fully connected layer depend on the maze size, and it
+learned this specific maze. Making DQN generalize would need training on many
+different mazes (and a network that doesn't depend on the size, e.g. only
+convolutions plus global pooling).
 
 **Q: Why does approximate Q-learning stop at 63% on the medium maze?**
 Its features only look one step ahead at the closest ghost and the closest food. With
@@ -933,8 +964,8 @@ the Q-values are almost never exactly equal).
 
 ## 11. Honest limitations
 
-- Trained and tested on the **same** mazes (only the ghost randomness differs), so
-  we don't know how well it generalizes to new mazes.
+- DQN is trained and tested on the **same** maze (only the ghost randomness differs)
+  and can't be used on another maze. Approximate Q-learning does generalize (9.6).
 - 3 seeds is the minimum to see the spread; some small differences (double DQN,
   the DQN medium versions) are not conclusive.
 - In step 3 of 9.4 two changes were made at once, so we can't separate their effects.
@@ -950,7 +981,9 @@ the Q-values are almost never exactly equal).
 
 ```
 python play.py --agent dqn                       # small maze, pygame window
-python play.py --agent approxq --layout medium
+python play.py --agent dqn --layout medium       # the best medium maze model (≈85%)
+python play.py --agent approxq --layout unseen --model models/approxq_small.json
+                                                 # small-maze weights on a new maze
 python train.py --agent approxq --episodes 300 --live   # watch it learn in ~1 minute
 python ghost_test.py --games 100
 python planner_test.py --layout medium --depth 3 --games 50
@@ -961,6 +994,9 @@ The `--live` demo is the best one for a lecture: the win rate chart climbs to ar
 90% within a few minutes (it reached 80% after about 230 games in our runs), and
 every 15 episodes a game is shown so the audience can see
 Pac-Man go from wandering into ghosts to clearly avoiding them.
+
+If the laptop can't run Python, show the gifs in `results/` (`dqn_medium.gif`,
+`dqn_small.gif`, `approxq_small.gif`, `approxq_medium.gif`).
 
 Good to show as well: the learned weights table (4.5), the ablation chart
 (`results/ablation_features.png`) and the medium maze chart with all DQN versions

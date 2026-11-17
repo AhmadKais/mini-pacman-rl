@@ -1,0 +1,50 @@
+[
+  {
+    "weights": "models/approxq_small.json",
+    "maze": "tiny",
+    "win_rate": 1.0,
+    "avg_score": 652.04
+  },
+  {
+    "weights": "models/approxq_small.json",
+    "maze": "small",
+    "win_rate": 0.964,
+    "avg_score": 913.04
+  },
+  {
+    "weights": "models/approxq_small.json",
+    "maze": "medium",
+    "win_rate": 0.632,
+    "avg_score": 809.368
+  },
+  {
+    "weights": "models/approxq_small.json",
+    "maze": "unseen",
+    "win_rate": 0.738,
+    "avg_score": 1270.692
+  },
+  {
+    "weights": "models/approxq_medium.json",
+    "maze": "tiny",
+    "win_rate": 1.0,
+    "avg_score": 661.656
+  },
+  {
+    "weights": "models/approxq_medium.json",
+    "maze": "small",
+    "win_rate": 0.97,
+    "avg_score": 923.84
+  },
+  {
+    "weights": "models/approxq_medium.json",
+    "maze": "medium",
+    "win_rate": 0.594,
+    "avg_score": 767.764
+  },
+  {
+    "weights": "models/approxq_medium.json",
+    "maze": "unseen",
+    "win_rate": 0.704,
+    "avg_score": 1273.148
+  }
+]

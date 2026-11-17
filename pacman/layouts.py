@@ -33,6 +33,18 @@ LAYOUTS = {
 %.....P.....%
 %%%%%%%%%%%%%
 """,
+    # never used for training, only to test how well the agents generalize
+    "unseen": """
+%%%%%%%%%%%
+%o...%...o%
+%.%%.%.%%.%
+%.........%
+%%.%%.%%.%%
+%...G.G...%
+%.%%.%.%%.%
+%o...P...o%
+%%%%%%%%%%%
+""",
 }
 
 

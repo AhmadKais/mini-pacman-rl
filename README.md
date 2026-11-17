@@ -5,13 +5,18 @@ A small Pac-Man game where an agent learns to win on its own, using two methods:
 1. **Approximate Q-learning**: a linear model over features I designed by hand
 2. **DQN (Deep Q-Network)**: a CNN that learns straight from the grid
 
+| DQN, medium maze | approximate Q-learning, small maze |
+|---|---|
+| ![dqn medium](results/dqn_medium.gif) | ![approxq small](results/approxq_small.gif) |
+
 ## The game
 
 - Pac-Man wins by eating all the food (`.`)
 - A ghost touching Pac-Man means game over
 - Eating a capsule (`o`) scares the ghosts for 20 steps, and Pac-Man can eat them
 - Ghosts mostly move randomly but sometimes chase (`--ghost-chase`, default 0.2)
-- Mazes: `tiny`, `small` (1 ghost), `medium` (2 ghosts), see `pacman/layouts.py`
+- Mazes: `tiny`, `small` (1 ghost), `medium` (2 ghosts), and `unseen` (2 ghosts, only
+  used to test generalization), see `pacman/layouts.py`
 - A game ends after 300 steps at most
 
 | event          | reward |
@@ -46,10 +51,12 @@ train.py             train one agent, save the model and a csv log
 play.py              watch a trained agent play
 ghost_test.py        check whether the agents really avoid ghosts
 planner_test.py      how well the lookahead planner plays
+generalization_test.py  approximate Q-learning weights on other mazes
+make_gif.py          record a trained agent as a gif
 run_experiments.py   run every experiment with 3 seeds
 summarize.py         results table and charts for the experiments
 plot_results.py      learning curves for single runs
-models/              trained models
+models/              trained models (dqn_medium.pt is the best medium maze run, seed 0)
 results/             training logs and charts
 ```
 
@@ -60,6 +67,8 @@ likely questions is in [EXPLANATION.md](EXPLANATION.md).
 
 ```
 pip install -r requirements.txt
+# (for the smaller CPU-only torch, install it first with
+#  pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu)
 
 python train.py --agent approxq --episodes 500
 python train.py --agent dqn --episodes 3000
@@ -68,7 +77,12 @@ python train.py --agent dqn --live          # watch it learn
 python play.py --agent approxq
 python play.py --agent dqn --text
 
+python play.py --agent dqn --layout medium
+
 python ghost_test.py --games 200
+python planner_test.py --layout medium --depth 3
+python generalization_test.py
+python make_gif.py --agent dqn --layout medium
 python -m unittest -v
 ```
 
@@ -199,6 +213,30 @@ have to find all of this out by playing, but it shows how well the game can be p
   trapped between two ghosts later.
 - On the small maze the planner wins 99% with 3 moves, about the same as DQN (100%).
   The small maze is basically solved by both.
+
+### Does it work on a maze it never saw?
+
+The features of approximate Q-learning don't depend on the maze (distances, "ghost one
+step away", ...), so the learned weights can be used on any maze. `generalization_test.py`
+takes the weights trained on the small and on the medium maze and plays 500 games on
+every maze, including `unseen`, a new 11×9 maze with 2 ghosts that was never used
+for training.
+
+| weights trained on | tiny | small | medium | unseen |
+|---|---|---|---|---|
+| small maze | 100% | 96% | 63% | 74% |
+| medium maze | 100% | 97% | 59% | 70% |
+| *trained on that maze itself* | | *96%* | *63%* | *71% ± 4 (3 seeds)* |
+
+- **The weights transfer with no loss.** The weights from the small maze (1 ghost)
+  win just as much on the medium maze as weights trained on the medium maze itself
+  (63%), and on the unseen maze they do as well as training on it directly.
+- This makes sense: the features describe the situation around Pac-Man, not the
+  maze, so "don't step next to a ghost, go for food" works everywhere. What limits
+  it on the bigger mazes is the features (they only look one step ahead), not the
+  training maze.
+- DQN can't do this. Its network takes the whole grid as input, so a model only
+  fits mazes of the size it was trained on, and it learned that one maze.
 
 ### Ablations
 
