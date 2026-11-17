@@ -30,6 +30,7 @@ pacman/              the game
   layouts.py         maze maps, parser and maze distances (BFS)
   env.py             game rules (reset / step, like a gym env)
   ghosts.py          how the ghosts move
+  observation.py     the grids the DQN sees
   render.py          terminal and pygame drawing
   live_view.py       live chart + game window while training
 agents/              the learning code
@@ -89,6 +90,7 @@ it learned, for example a big negative weight on `ghosts-1-step-away`.
 
 **DQN.** The board is turned into 6 grids (walls, food, capsules, pacman, ghosts,
 scared ghosts) and passed through a CNN that outputs one Q-value per action.
+With `--ghost-directions` there is a 7th grid showing where each ghost just came from.
 Some tricks keep training stable:
 - a replay buffer, so it trains on random past transitions
 - a target network that is updated every 1000 steps
@@ -112,7 +114,8 @@ training games first reaches 80%.
 | dqn, small maze | **100% ± 1** | **1073 ± 12** | 2138 ± 161 |
 | approxq, medium maze | 63% ± 3 | 794 ± 56 | never |
 | dqn, medium maze, 5000 episodes | 73% ± 5 | 1043 ± 36 | never (training reached ~40%) |
-| dqn, medium maze, 10000 episodes | **79% ± 4** | **1170 ± 86** | never (training reached ~50%) |
+| dqn, medium maze, 10000 episodes | 79% ± 4 | 1170 ± 86 | never (training reached ~50%) |
+| dqn, medium maze, improved, 6000 episodes | **82% ± 6** | **1237 ± 68** | never (training reached ~55%) |
 
 ![small maze](results/small_maze.png)
 ![medium maze](results/medium_maze.png)
@@ -130,6 +133,17 @@ training games first reaches 80%.
   episodes (about 11.5 hours per run). That got it to **79% wins** and a higher score.
   The training curve flattens out around 45-50% after episode 8,500, so doubling
   the episodes again would probably give only a small gain.
+- Almost every game the 10000 episode agent lost was a ghost catching it late in the
+  game (about 12 of the 50 food left), not running out of time. So the **improved**
+  run changes two things: the random moves fade out over the first 2000 episodes
+  instead of 60% of the training (`--eps-episodes 2000`), and the network gets a 7th
+  grid with the cell each ghost just came from (`--ghost-directions`). Ghosts never
+  turn back, so this shows which way they are going.
+- The improved agent starts winning around episode 2,000 instead of 6,000 and gets
+  **82% wins with 6000 episodes**, slightly better than 79% with 10000. The gain is
+  within the spread between seeds (75%, 84% and 87%), so the clear win is that it
+  gets there with 40% fewer episodes. Both changes were made together, so this
+  doesn't say which one helped more.
 - The test win rate is higher than the training curve because the test has no
   random moves.
 
