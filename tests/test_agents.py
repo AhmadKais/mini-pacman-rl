@@ -8,6 +8,7 @@ import unittest
 from agents.approx_q import ApproxQAgent
 from agents.baselines import FoodOnlyAgent
 from agents.features import extract_features
+from agents.planner import PlannerAgent
 from pacman.env import PacmanEnv
 
 UP = 0
@@ -80,6 +81,18 @@ class TestBaselines(unittest.TestCase):
         env = PacmanEnv(FOOD_BOTH_WAYS)
         env.food = {(1, 5)}
         self.assertEqual(FoodOnlyAgent().act(env), RIGHT)
+
+
+class TestPlanner(unittest.TestCase):
+    def test_goes_to_food_without_ghosts(self):
+        env = PacmanEnv(FOOD_BOTH_WAYS)
+        env.food = {(1, 5)}
+        self.assertEqual(PlannerAgent(depth=2).act(env), RIGHT)
+
+    def test_runs_away_from_a_ghost(self):
+        env = PacmanEnv(GHOST_NEARBY)
+        env.pacman = (1, 3)  # the food to the right is next to the ghost
+        self.assertEqual(PlannerAgent(depth=2).act(env), LEFT)
 
 
 if __name__ == "__main__":

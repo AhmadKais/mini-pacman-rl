@@ -1,0 +1,9 @@
+{
+  "layout": "small",
+  "depth": 3,
+  "games": 500,
+  "win_rate": 0.994,
+  "caught": 0.006,
+  "timeout": 0.0,
+  "avg_score": 1098.606
+}

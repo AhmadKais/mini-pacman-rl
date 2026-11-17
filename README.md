@@ -38,18 +38,23 @@ agents/              the learning code
   approx_q.py        approximate Q-learning agent
   dqn.py             DQN agent (CNN, replay buffer, target net, double DQN)
   baselines.py       random and food-only agents to compare against
+  planner.py         lookahead planner that knows the rules (no learning)
   training.py        one training episode, and the test without random moves
   loading.py         creating / loading agents
 tests/               unit tests for the game rules, features and agents
 train.py             train one agent, save the model and a csv log
 play.py              watch a trained agent play
 ghost_test.py        check whether the agents really avoid ghosts
+planner_test.py      how well the lookahead planner plays
 run_experiments.py   run every experiment with 3 seeds
 summarize.py         results table and charts for the experiments
 plot_results.py      learning curves for single runs
 models/              trained models
 results/             training logs and charts
 ```
+
+A full explanation of the theory, every file and function, the experiments and
+likely questions is in [EXPLANATION.md](EXPLANATION.md).
 
 ## How to run
 
@@ -159,6 +164,42 @@ training games first reaches 80%.
     from 79% to 82% are basically the same. Telling them apart would need more
     seeds and more test games.
 
+### How good can it get? A planner to compare with
+
+*The planner is not a reinforcement learning algorithm and not part of the project's
+methods. It is a baseline, like the random and food-only agents, only a much stronger
+one.*
+
+Every DQN version stopped at about 80% on the medium maze, and every lost game was a
+ghost catching pacman. To see if 80% is close to the best possible, `agents/planner.py`
+plays with a lookahead (expectimax) instead of learning. It knows the real game rules
+and how the ghosts move, tries every move a few steps ahead and averages over where
+the ghosts could go. It is not a fair opponent for the learned agents, because they
+have to find all of this out by playing, but it shows how well the game can be played.
+
+| agent (medium maze) | test win rate | avg score |
+|---|---|---|
+| approxq | 63% | 794 |
+| dqn (best version) | 82% | 1237 |
+| planner, 1 move ahead | 75% | 869 |
+| planner, 2 moves ahead | 87% | 1179 |
+| planner, 3 moves ahead | 89% | 1258 |
+| planner, 4 moves ahead | 91% | 1377 |
+| planner, 5 moves ahead | 95% | 1502 |
+| planner, 6 moves ahead | 95% | 1561 |
+
+(planner: 500 games each, `python planner_test.py --layout medium --depth 3`)
+
+- **There is room left above DQN.** Looking 5 moves ahead wins 95%, so 80% is not
+  the limit of the game. Looking 6 moves ahead adds almost nothing (95.4% vs
+  94.8%), so about 95% seems close to the best possible: roughly 5% of the games
+  look truly lost.
+- DQN plays about as well as a planner that looks **1 to 2 moves ahead**. It reacts
+  well to a ghost that is close, but doesn't plan far enough to avoid getting
+  trapped between two ghosts later.
+- On the small maze the planner wins 99% with 3 moves, about the same as DQN (100%).
+  The small maze is basically solved by both.
+
 ### Ablations
 
 What happens when parts of the method are taken away (small maze, 3 seeds each):
@@ -219,10 +260,11 @@ more aggressive ghosts as well.
 
 ## Tests
 
-`tests/` has 18 unit tests. The game rules are tested on tiny corridor mazes where the
+`tests/` has 21 unit tests. The game rules are tested on tiny corridor mazes where the
 outcome is known: walls, eating food, winning, getting caught, capsules, eating a scared
 ghost, the time limit and reset. The agent tests check the features, the Q-learning
-update, saving / loading and the food-only baseline.
+update, saving / loading, the food-only baseline, the planner and the ghost direction
+grid.
 
 ```
 python -m unittest -v
