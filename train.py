@@ -39,6 +39,7 @@ def parse_args():
     parser.add_argument("--threads", type=int, default=None, help="cpu threads for torch")
     parser.add_argument("--live", action="store_true", help="show a live chart and games")
     parser.add_argument("--watch-every", type=int, default=None, help="show a game every N episodes")
+    parser.add_argument("--fps", type=int, default=15, help="speed of the games in --live")
     return parser.parse_args()
 
 
@@ -96,7 +97,8 @@ def main():
         watch_every = args.watch_every
         if watch_every is None:
             watch_every = max(10, episodes // 20)
-        live = LiveTraining(env, args.agent + " on " + args.layout, watch_every=watch_every)
+        live = LiveTraining(env, args.agent + " on " + args.layout, watch_every=watch_every,
+                            fps=args.fps)
 
     log = []
     best = None  # (win rate, avg score) of the best model so far

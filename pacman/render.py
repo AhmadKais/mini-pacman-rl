@@ -1,4 +1,5 @@
-# Drawing the game, as text in the terminal or in a pygame window
+# Drawing the game in a pygame window.
+# Keys: up arrow = faster, down arrow = slower, space = pause.
 
 import math
 
@@ -13,37 +14,6 @@ GHOST_COLORS = [(230, 50, 50), (255, 150, 200), (60, 220, 230), (255, 170, 60)]
 MOUTH_ANGLES = [-90, 90, 180, 0]  # up, down, left, right
 
 
-def text_frame(env):
-    rows = []
-    for r in range(env.height):
-        row = []
-        for c in range(env.width):
-            if env.walls[r, c]:
-                row.append("%")
-            else:
-                row.append(" ")
-        rows.append(row)
-
-    for r, c in env.food:
-        rows[r][c] = "."
-    for r, c in env.capsules:
-        rows[r][c] = "o"
-    for i in range(len(env.ghosts)):
-        r, c = env.ghosts[i]
-        if env.scared[i] > 0:
-            rows[r][c] = "g"
-        else:
-            rows[r][c] = "G"
-    r, c = env.pacman
-    rows[r][c] = "P"
-
-    lines = []
-    for row in rows:
-        lines.append("".join(row))
-    lines.append(f"score {env.score}   steps {env.steps}   food left {len(env.food)}")
-    return "\n".join(lines)
-
-
 class PygameView:
     def __init__(self, env, fps=8):
         pygame.init()
@@ -53,6 +23,7 @@ class PygameView:
         self.font = pygame.font.SysFont("consolas", 18)
         self.clock = pygame.time.Clock()
         self.closed = False
+        self.paused = False
 
     def center(self, cell):
         x = cell[1] * CELL + CELL // 2
@@ -67,7 +38,25 @@ class PygameView:
             if event.type == pygame.QUIT:
                 self.close()
                 return False
+            if event.type == pygame.KEYDOWN:
+                self.handle_key(event.key)
         return True
+
+    def handle_key(self, key):
+        if key == pygame.K_UP:
+            self.fps = min(60, self.fps * 2)
+        elif key == pygame.K_DOWN:
+            self.fps = max(1, self.fps // 2)
+        elif key == pygame.K_SPACE:
+            self.paused = not self.paused
+
+    def wait_while_paused(self):
+        if self.paused:
+            text = self.font.render("PAUSED (space)", True, (255, 255, 255))
+            self.screen.blit(text, (8, 5))
+            pygame.display.flip()
+        while self.paused and self.handle_events():
+            self.clock.tick(20)
 
     def draw(self, env, action=None):
         if not self.handle_events():
@@ -92,6 +81,7 @@ class PygameView:
         self.draw_status(env)
         pygame.display.flip()
         self.clock.tick(self.fps)
+        self.wait_while_paused()
 
     def draw_ghost(self, cell, color):
         x, y = self.center(cell)

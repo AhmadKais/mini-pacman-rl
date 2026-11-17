@@ -516,6 +516,7 @@ pacman/              the game
   ghosts.py
   observation.py
   render.py
+  text_view.py
   live_view.py
 agents/              the learning code
   features.py
@@ -577,11 +578,16 @@ A gym-style environment: `reset()` and `step(action)`.
 - `make_observation(env)`: builds the channel grids of section 5.2.
 
 ### pacman/render.py
-- `text_frame(env)`: the maze as text for the terminal (`play.py --text`).
 - `PygameView`: the game window. `draw` paints walls, food, capsules, ghosts (blue when
   scared), Pac-Man with a mouth pointing in his last direction, and a status line.
   `handle_events` notices when the window is closed (then training goes on without
-  drawing instead of crashing). `set_title`, `pause`, `close`.
+  drawing instead of crashing) and passes key presses to `handle_key`: up arrow
+  doubles the speed (up to 60 frames a second), down arrow halves it, space pauses.
+  `wait_while_paused` shows "PAUSED" and waits (during `--live` training also stops
+  while paused). `set_title`, `pause`, `close`.
+
+### pacman/text_view.py
+- `text_frame(env)`: the maze as text for the terminal (`play.py --text`).
 
 ### pacman/live_view.py
 - `moving_average(values, window=50)`: average of the last 50 values, used for every
@@ -663,7 +669,7 @@ A gym-style environment: `reset()` and `step(action)`.
 - `train.py`: trains one agent. Options: `--agent`, `--layout`, `--episodes`,
   `--ghost-chase`, `--max-steps`, `--seed`, `--name`, `--no-double`,
   `--drop-features`, `--eps-episodes`, `--eps-end`, `--eval-every`,
-  `--ghost-directions`, `--threads`, `--live`, `--watch-every`. Prints progress every 50
+  `--ghost-directions`, `--threads`, `--live`, `--watch-every`, `--fps`. Prints progress every 50
   games, saves the model, the per-game log (`results/<name>.csv`: episode, score, won)
   and the final 100-game test (`results/<name>_test.json`).
 - `play.py`: watch a trained model play (pygame window, or `--text` for the terminal).
@@ -1031,6 +1037,7 @@ python play.py --agent dqn --layout medium       # the best medium maze model (â
 python play.py --agent approxq --layout unseen --model models/approxq_small.json
                                                  # small-maze weights on a new maze
 python train.py --agent approxq --episodes 300 --live   # watch it learn in ~1 minute
+python train.py --agent approxq --layout medium --live --fps 5   # medium maze, slow
 python ghost_test.py --games 100
 python planner_test.py --layout medium --depth 3 --games 50
 python -m unittest -v
@@ -1039,7 +1046,9 @@ python -m unittest -v
 The `--live` demo is the best one for a lecture: the win rate chart climbs to around
 90% within a few minutes (it reached 80% after about 230 games in our runs), and
 every 15 episodes a game is shown so the audience can see
-Pac-Man go from wandering into ghosts to clearly avoiding them.
+Pac-Man go from wandering into ghosts to clearly avoiding them. In the game window the
+down arrow slows it down, the up arrow speeds it up and space pauses (handy when
+explaining a move). Closing a window doesn't stop training, ctrl+c does.
 
 If the laptop can't run Python, show the gifs in `results/` (`dqn_medium.gif`,
 `dqn_small.gif`, `approxq_small.gif`, `approxq_medium.gif`).

@@ -36,7 +36,8 @@ pacman/              the game
   env.py             game rules (reset / step, like a gym env)
   ghosts.py          how the ghosts move
   observation.py     the grids the DQN sees
-  render.py          terminal and pygame drawing
+  render.py          pygame drawing (up/down arrows = speed, space = pause)
+  text_view.py       the game as text for the terminal
   live_view.py       live chart + game window while training
 agents/              the learning code
   features.py        features for approximate Q-learning
@@ -74,6 +75,10 @@ pip install -r requirements.txt
 python train.py --agent approxq --episodes 500
 python train.py --agent dqn --episodes 3000
 python train.py --agent dqn --live          # watch it learn
+python train.py --agent approxq --layout medium --live --fps 5   # slower games
+
+# in the game window: up arrow = faster, down arrow = slower, space = pause
+# closing a window only stops the drawing, training goes on (ctrl+c stops it)
 
 python play.py --agent approxq
 python play.py --agent dqn --text

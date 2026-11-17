@@ -8,7 +8,8 @@ import time
 
 from agents.loading import load_agent
 from pacman.env import PacmanEnv
-from pacman.render import PygameView, text_frame
+from pacman.render import PygameView
+from pacman.text_view import text_frame
 
 
 def show(env, view, action, fps):
