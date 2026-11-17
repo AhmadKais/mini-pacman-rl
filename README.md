@@ -116,6 +116,7 @@ training games first reaches 80%.
 | dqn, medium maze, 5000 episodes | 73% ± 5 | 1043 ± 36 | never (training reached ~40%) |
 | dqn, medium maze, 10000 episodes | 79% ± 4 | 1170 ± 86 | never (training reached ~50%) |
 | dqn, medium maze, improved, 6000 episodes | **82% ± 6** | **1237 ± 68** | never (training reached ~55%) |
+| dqn, medium maze, improved + best model + epsilon 0.01 | 78% ± 4 | 1173 ± 80 | 3152 ± 188 |
 
 ![small maze](results/small_maze.png)
 ![medium maze](results/medium_maze.png)
@@ -146,6 +147,17 @@ training games first reaches 80%.
   doesn't say which one helped more.
 - The test win rate is higher than the training curve because the test has no
   random moves.
+- The last run tried two more things on top of the improved one: epsilon goes down to
+  0.01 instead of 0.05 (`--eps-end 0.01`), and every 250 episodes the agent plays 50
+  test games and only the best version is kept (`--eval-every 250`). **It didn't
+  help** (78% vs 82%, inside the spread between seeds):
+  - The training curve went up to 70-85%, but only because there are fewer random
+    moves in training. The agent itself plays about as well as before.
+  - The best checks were 88-90%, but the final 100 game tests of the same models were
+    74-81%. With 50 games, picking the highest check also picks the luckiest one.
+  - A 100 game test is itself only accurate to about ±4%, so all the DQN versions
+    from 79% to 82% are basically the same. Telling them apart would need more
+    seeds and more test games.
 
 ### Ablations
 
