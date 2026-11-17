@@ -13,7 +13,7 @@ import numpy as np
 import torch
 
 from agents.loading import model_extension, new_agent
-from agents.training import evaluate, run_episode
+from agents.training import evaluate, keep_if_best, run_episode
 from pacman.env import PacmanEnv
 
 
@@ -31,6 +31,9 @@ def parse_args():
                         help="approximate Q-learning features to leave out")
     parser.add_argument("--eps-episodes", type=int, default=None,
                         help="episodes until epsilon is at its minimum (default 60%% of them)")
+    parser.add_argument("--eps-end", type=float, default=0.05, help="lowest epsilon (DQN)")
+    parser.add_argument("--eval-every", type=int, default=0,
+                        help="test every N episodes and keep the best model (0 = keep the last)")
     parser.add_argument("--ghost-directions", action="store_true",
                         help="DQN also sees which way the ghosts are moving")
     parser.add_argument("--threads", type=int, default=None, help="cpu threads for torch")
@@ -82,7 +85,10 @@ def main():
                     ghost_chase_prob=args.ghost_chase, seed=args.seed,
                     ghost_directions=args.ghost_directions)
     agent = new_agent(args.agent, env, episodes, double_dqn=not args.no_double,
-                      drop_features=args.drop_features, eps_episodes=args.eps_episodes)
+                      drop_features=args.drop_features, eps_episodes=args.eps_episodes,
+                      eps_end=args.eps_end)
+    model_file = "models/" + name + model_extension(args.agent)
+    os.makedirs(os.path.dirname(model_file), exist_ok=True)
 
     live = None
     if args.live:
@@ -93,6 +99,7 @@ def main():
         live = LiveTraining(env, args.agent + " on " + args.layout, watch_every=watch_every)
 
     log = []
+    best = None  # (win rate, avg score) of the best model so far
     for episode in range(1, episodes + 1):
         score, won = run_episode(env, agent, args.agent)
         log.append((episode, score, int(won)))
@@ -100,10 +107,13 @@ def main():
             live.update(env, agent, log)
         if episode % 50 == 0:
             print_progress(log, agent)
+        if args.eval_every > 0 and episode % args.eval_every == 0:
+            best = keep_if_best(env, agent, model_file, best)
 
-    model_file = "models/" + name + model_extension(args.agent)
-    os.makedirs(os.path.dirname(model_file), exist_ok=True)
-    agent.save(model_file)
+    if args.eval_every > 0:
+        agent.load(model_file)  # go back to the best model for the final test
+    else:
+        agent.save(model_file)
     print("saved model to", model_file)
     if args.agent == "approxq":
         print("learned weights:")

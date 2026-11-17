@@ -17,7 +17,8 @@ def model_path(kind, layout):
     return "models/" + kind + "_" + layout + model_extension(kind)
 
 
-def new_agent(kind, env, episodes, double_dqn=True, drop_features=None, eps_episodes=None):
+def new_agent(kind, env, episodes, double_dqn=True, drop_features=None, eps_episodes=None,
+              eps_end=0.05):
     # by default epsilon reaches its minimum at around 60% of the training
     if eps_episodes is None:
         eps_episodes = max(1, int(episodes * 0.6))
@@ -25,7 +26,8 @@ def new_agent(kind, env, episodes, double_dqn=True, drop_features=None, eps_epis
         decay = 0.05 ** (1 / eps_episodes)
         return ApproxQAgent(eps_decay=decay, drop_features=drop_features)
     obs_shape = (env.n_channels, env.height, env.width)
-    return DQNAgent(obs_shape, eps_decay_episodes=eps_episodes, double_dqn=double_dqn)
+    return DQNAgent(obs_shape, eps_end=eps_end, eps_decay_episodes=eps_episodes,
+                    double_dqn=double_dqn)
 
 
 def load_agent(kind, env, path=None):
