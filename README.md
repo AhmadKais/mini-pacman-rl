@@ -41,7 +41,8 @@ pacman/              the game
 agents/              the learning code
   features.py        features for approximate Q-learning
   approx_q.py        approximate Q-learning agent
-  dqn.py             DQN agent (CNN, replay buffer, target net, double DQN)
+  dqn.py             DQN agent (CNN, target net, double DQN)
+  replay_buffer.py   the replay buffer for DQN
   baselines.py       random and food-only agents to compare against
   planner.py         lookahead planner that knows the rules (no learning)
   training.py        one training episode, and the test without random moves
@@ -306,11 +307,12 @@ numbers, so running it again gives exactly this table.)
 
 ## Tests
 
-`tests/` has 21 unit tests. The game rules are tested on tiny corridor mazes where the
+`tests/` has 27 unit tests. The game rules are tested on tiny corridor mazes where the
 outcome is known: walls, eating food, winning, getting caught, capsules, eating a scared
-ghost, the time limit and reset. The agent tests check the features, the Q-learning
-update, saving / loading, the food-only baseline, the planner and the ghost direction
-grid.
+ghost, the time limit, reset and the ghost direction grid. The agent tests check the
+features, the Q-learning update, saving / loading, the food-only baseline and the
+planner. The DQN tests check the network, the replay buffer, that only legal moves are
+picked, the epsilon schedule and that a training step changes the network.
 
 ```
 python -m unittest -v

@@ -521,6 +521,7 @@ agents/              the learning code
   features.py
   approx_q.py
   dqn.py
+  replay_buffer.py
   baselines.py
   planner.py
   training.py
@@ -528,8 +529,9 @@ agents/              the learning code
 tests/
   test_env.py
   test_agents.py
-train.py, play.py, ghost_test.py, planner_test.py,
-run_experiments.py, summarize.py, plot_results.py
+  test_dqn.py
+train.py, play.py, ghost_test.py, planner_test.py, generalization_test.py,
+make_gif.py, run_experiments.py, summarize.py, plot_results.py
 models/   results/
 ```
 
@@ -607,9 +609,13 @@ A gym-style environment: `reset()` and `step(action)`.
 
 ### agents/dqn.py
 - `QNetwork`: the CNN of 5.3; `forward` runs it.
+
+### agents/replay_buffer.py
 - `ReplayBuffer`: numpy arrays for obs, actions, rewards, next obs, done flags and
-  next-state masks; `add` writes at position `pos` and wraps around; `sample` picks
-  random indices.
+  next-state masks; `add` writes at position `pos` and wraps around (the oldest
+  transition gets overwritten when it's full); `sample` picks random indices.
+
+### agents/dqn.py (continued)
 - `DQNAgent`:
   - `epsilon` (a property): linear from 1.0 to `eps_end` over `eps_decay_episodes`.
   - `act`: ε-greedy among legal moves.
@@ -675,12 +681,18 @@ A gym-style environment: `reset()` and `step(action)`.
 - `plot_results.py`: learning curves for single runs.
 
 ### tests/
-21 unit tests with `unittest` (`python -m unittest -v`). The game tests use tiny
-corridor mazes where the outcome is certain: walking into a wall, eating food,
-winning, being caught, the capsule, eating a scared ghost, the time limit, reset, the
-observation shape and the ghost direction channel. The agent tests check the features,
-that a Q-learning update moves the weights the right way, dropped features, saving /
-loading, the food-only agent and the planner (goes for food, runs from a ghost).
+27 unit tests with `unittest` (`python -m unittest -v`).
+- `test_env.py`: the game, on tiny corridor mazes where the outcome is certain:
+  walking into a wall, eating food, winning, being caught, the capsule, eating a
+  scared ghost (and the `ghosts_eaten` counter), the time limit, reset, the
+  observation shape and the ghost direction channel.
+- `test_agents.py`: the features, that a Q-learning update moves the weights the
+  right way, dropped features, saving / loading, the food-only agent and the planner
+  (goes for food, runs from a ghost).
+- `test_dqn.py`: the network gives one Q-value per action, the replay buffer
+  overwrites the oldest transitions, the agent only picks legal moves (random or
+  greedy), ε goes down per episode, a training step really changes the network, and
+  saving / loading gives the same network.
 
 ---
 
