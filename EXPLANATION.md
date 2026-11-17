@@ -841,6 +841,27 @@ medium maze and played 500 games on every maze, including `unseen` (never traine
 This is a nice point for the presentation: hand-made features need human work, but
 they generalize; DQN learns its own features, but only for what it saw.
 
+### 9.7 Are our ghosts harder than the usual ones? (random ghosts)
+
+Other approximate Q-learning projects on the Berkeley Pac-Man game report around 90%
+wins on their medium maze. Their default ghosts move completely at random, ours chase
+pacman 20% of the time. So we trained the same agent on the medium maze with
+`--ghost-chase 0` (ghosts still never turn back, like the Berkeley ones), 3 seeds:
+
+| medium maze, 1000 episodes | test win rate | test avg score |
+|---|---|---|
+| ghosts chase 20% of the time | 63% ± 3 | 794 ± 56 |
+| random ghosts | **74% ± 5** | **1003 ± 65** |
+
+- Chasing ghosts cost about 11% of the wins (seeds: 76%, 69%, 78% vs 63% ± 3), and
+  the training curve (`results/ghost_behavior.png`) is higher the whole time.
+- It is still below 90%, so the ghosts explain only part of the gap. The rest is the
+  maze (ours is not the same maze) and the one-step-ahead features. The 90% figure is
+  also one student project tested on 40 games, not an exact target.
+- How to say it: "our numbers can't be compared one to one with Berkeley projects
+  because the game is ours, but when we make our ghosts behave like theirs we get
+  closer to their results."
+
 ---
 
 ## 10. Questions you may be asked (with answers)
@@ -960,6 +981,8 @@ convolutions plus global pooling).
 Its features only look one step ahead at the closest ghost and the closest food. With
 two ghosts it can walk into a corridor where both close in. The model is linear, so it
 can't represent "this combination is dangerous" unless a feature describes it.
+Our ghosts are also harder than the usual random ones: with random ghosts the same
+agent wins 74% (see 9.7).
 
 **Q: What would you do with more time?**
 n-step returns and a dueling network for DQN; more seeds and 500-game tests to

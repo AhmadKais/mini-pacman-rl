@@ -28,6 +28,9 @@ EXPERIMENTS = {
     "dqn_small_no_double": ["--agent", "dqn", "--layout", "small", "--episodes", "3000",
                             "--no-double"],
     "approxq_medium": ["--agent", "approxq", "--layout", "medium", "--episodes", "1000"],
+    # same, but the ghosts never chase (like the random ghosts in the berkeley pacman)
+    "approxq_medium_random_ghosts": ["--agent", "approxq", "--layout", "medium",
+                                     "--episodes", "1000", "--ghost-chase", "0"],
     "approxq_small": ["--agent", "approxq", "--layout", "small", "--episodes", "500"],
     "approxq_small_no_ghost_features": [
         "--agent", "approxq", "--layout", "small", "--episodes", "500",

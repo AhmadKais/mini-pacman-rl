@@ -239,6 +239,28 @@ for training.
 - DQN can't do this. Its network takes the whole grid as input, so a model only
   fits mazes of the size it was trained on, and it learned that one maze.
 
+### Are our ghosts harder than the usual ones?
+
+Other approximate Q-learning projects (on the Berkeley Pac-Man game) report around 90%
+wins on their medium maze, more than our 63%. Their ghosts move completely at random
+by default, while ours chase pacman 20% of the time. To check how much this matters,
+the same training was run with `--ghost-chase 0` (ghosts still never turn back, like
+the Berkeley ones):
+
+| experiment (medium maze, 1000 episodes) | test win rate | test avg score |
+|---|---|---|
+| approxq, ghosts chase 20% of the time | 63% ± 3 | 794 ± 56 |
+| approxq, random ghosts | **74% ± 5** | **1003 ± 65** |
+
+![ghost behavior](results/ghost_behavior.png)
+
+- The chasing ghosts cost about **11% of the wins**. With random ghosts every seed wins
+  more (76%, 69%, 78%) and the training curve is higher the whole time.
+- It still doesn't reach 90%, so the ghosts are only part of the difference. The rest
+  comes from the maze itself (ours is not the same maze) and from the features only
+  looking one step ahead. The 90% number is also one student project tested on 40
+  games, so it is not an exact target.
+
 ### Ablations
 
 What happens when parts of the method are taken away (small maze, 3 seeds each):
